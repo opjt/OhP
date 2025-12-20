@@ -9,7 +9,10 @@ import (
 	"go.uber.org/fx"
 )
 
-func NewRouter(pushHandler *handler.PushHandler) *chi.Mux {
+func NewRouter(
+	pushHandler *handler.PushHandler,
+	authHandler *handler.AuthHandler,
+) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -17,6 +20,7 @@ func NewRouter(pushHandler *handler.PushHandler) *chi.Mux {
 	r.Use(middle.CorsMiddleware)
 
 	r.Mount("/push", pushHandler.Routes())
+	r.Mount("/auth", authHandler.Routes())
 
 	return r
 }
@@ -24,6 +28,7 @@ func NewRouter(pushHandler *handler.PushHandler) *chi.Mux {
 var routeModule = fx.Module("router",
 	fx.Provide(
 		handler.NewPushHandler,
+		handler.NewAuthHandler,
 	),
 
 	fx.Provide(NewRouter),

@@ -11,10 +11,12 @@ import (
 type Env struct {
 	stageRaw string `ignored:"true"`
 	Stage    Stage  `ignored:"true"`
+	FrontUrl string `env:"FRONT_URL"`
 
 	Log     Log     `env:", prefix=LOG_"`
 	Service Service `env:", prefix=SERVICE_"`
 	Vapid   Vapid   `env:", prefix=VAPID_"`
+	Github  Github  `env:", prefix=GITHUB_"`
 }
 
 type Log struct {
@@ -28,6 +30,10 @@ type Service struct {
 type Vapid struct {
 	PublicKey  string `env:"PUBLIC_KEY"`
 	PrivateKey string `env:"PRIVATE_KEY"`
+}
+type Github struct {
+	ClientID     string `env:"CLIENT_ID"`
+	ClientSecret string `env:"CLIENT_SECRET"`
 }
 
 func NewEnv() (Env, error) {
