@@ -2,19 +2,26 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"ohp/internal/domain/user"
 	"ohp/internal/pkg/config"
 )
 
 type AuthService struct {
 	githubConfig config.Github
+	testRepo     user.UserRepository
 }
 
-func NewAuthService(env config.Env) *AuthService {
+func NewAuthService(
+	env config.Env,
+	testRepo user.UserRepository,
+) *AuthService {
 	return &AuthService{
 		githubConfig: env.Github,
+		testRepo:     testRepo,
 	}
 }
 
@@ -32,6 +39,10 @@ func (s *AuthService) OauthGithubFlow(code string) (*GithubUser, error) {
 		return nil, err
 	}
 	user, err := s.getGithubUserProfile(accessToken)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.FindOrCreate(user)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +86,6 @@ type GithubUser struct {
 
 func (s *AuthService) getGithubUserProfile(accessToken string) (*GithubUser, error) {
 	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
-	// Authorization 헤더에 "Bearer {token}" 설정
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	client := &http.Client{}
@@ -95,4 +105,8 @@ func (s *AuthService) getGithubUserProfile(accessToken string) (*GithubUser, err
 	}
 
 	return &user, nil
+}
+
+func (s *AuthService) FindOrCreate(userProfile *GithubUser) (*user.User, error) {
+	return s.testRepo.UpsertUserByEmail(context.TODO(), userProfile.Email)
 }

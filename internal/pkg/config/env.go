@@ -17,8 +17,13 @@ type Env struct {
 	Service Service `env:", prefix=SERVICE_"`
 	Vapid   Vapid   `env:", prefix=VAPID_"`
 	Github  Github  `env:", prefix=GITHUB_"`
+
+	DB DB `env:", prefix=DB_"`
 }
 
+type DB struct {
+	URL string `env:"URL"`
+}
 type Log struct {
 	Level string `env:"LEVEL"`
 }

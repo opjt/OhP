@@ -1,8 +1,7 @@
-version: "3.9"
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     container_name: dev-postgres
     restart: unless-stopped
     environment:
@@ -12,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
       - ./dev/postgres:/docker-entrypoint-initdb.d # init script
 volumes:
   pgdata:

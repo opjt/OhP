@@ -1,0 +1,2 @@
+sqlgen:
+	@sqlc generate

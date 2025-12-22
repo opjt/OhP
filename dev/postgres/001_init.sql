@@ -1,10 +1,10 @@
 -- users
 CREATE TABLE
     users (
-        id UUID PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT uuidv7(),
         email TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT now()
+        created_at TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at TIMESTAMP
     );
 
 -- services

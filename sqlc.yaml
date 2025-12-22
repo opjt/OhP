@@ -1,0 +1,23 @@
+version: "2"
+sql:
+  - schema: "db/schema/"
+    queries: ["internal/domain/auth", "internal/domain/user"]
+    engine: "postgresql" 
+    gen:
+      go:
+        package: "postgresql"
+        out: "internal/infrastructure/db/postgresql"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_pointers_for_null_types: true
+        overrides:
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"
+          - db_type: "pg_catalog.timestamp"
+            go_type:
+              type: "time.Time"
+          - db_type: "pg_catalog.timestamp"
+            go_type:
+              type: "*time.Time"
+            nullable: true
+
