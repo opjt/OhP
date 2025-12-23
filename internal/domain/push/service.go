@@ -28,9 +28,10 @@ func NewPushService(repo SubscriptionRepository, env config.Env, tokenService *t
 func (s *PushService) Subscribe(ctx context.Context, sub Subscription) error {
 
 	if err := s.tokenService.Register(ctx, token.Token{
-		P256dh: sub.P256dh,
-		Auth:   sub.Auth,
-		UserID: sub.UserID,
+		P256dh:   sub.P256dh,
+		Auth:     sub.Auth,
+		UserID:   sub.UserID,
+		EndPoint: sub.Endpoint,
 	}); err != nil {
 		return err
 	}
@@ -45,6 +46,20 @@ func (s *PushService) Subscribe(ctx context.Context, sub Subscription) error {
 	s.repo.Save(sub.Endpoint, subs)
 	return nil
 }
+
+func (s *PushService) Unsubscribe(ctx context.Context, sub Subscription) error {
+
+	if err := s.tokenService.Unregister(ctx, token.Token{
+		P256dh:   sub.P256dh,
+		Auth:     sub.Auth,
+		EndPoint: sub.Endpoint,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *PushService) Push(ctx context.Context, sub Subscription) error {
 
 	subs := &webpush.Subscription{

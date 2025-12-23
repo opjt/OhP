@@ -14,7 +14,8 @@ CREATE TABLE
         user_id UUID NOT NULL REFERENCES users (id),
         p256dh_key TEXT NOT NULL,
         auth_key TEXT NOT NULL,
+        endpoint TEXT NOT NULL,
         is_active BOOLEAN NOT NULL DEFAULT true,
         created_at TIMESTAMP NOT NULL DEFAULT now(),
-        UNIQUE (user_id, p256dh_key, auth_key)
+        UNIQUE (user_id, p256dh_key, auth_key, endpoint)
     );

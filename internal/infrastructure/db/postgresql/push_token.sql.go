@@ -11,15 +11,33 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteToken = `-- name: DeleteToken :exec
+DELETE FROM push_tokens
+WHERE endpoint = $1 
+    AND p256dh_key = $2 
+    AND auth_key = $3
+`
+
+type DeleteTokenParams struct {
+	Endpoint  string
+	P256dhKey string
+	AuthKey   string
+}
+
+func (q *Queries) DeleteToken(ctx context.Context, arg DeleteTokenParams) error {
+	_, err := q.db.Exec(ctx, deleteToken, arg.Endpoint, arg.P256dhKey, arg.AuthKey)
+	return err
+}
+
 const upsertToken = `-- name: UpsertToken :one
 INSERT INTO push_tokens (
     user_id,
     p256dh_key,
     auth_key,
-    is_active
+    endpoint
 )
-VALUES ($1, $2, $3, true)
-ON CONFLICT (user_id, p256dh_key, auth_key)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (user_id, p256dh_key, auth_key, endpoint)
 DO UPDATE SET
     is_active = true
 RETURNING user_id
@@ -29,10 +47,16 @@ type UpsertTokenParams struct {
 	UserID    uuid.UUID
 	P256dhKey string
 	AuthKey   string
+	Endpoint  string
 }
 
 func (q *Queries) UpsertToken(ctx context.Context, arg UpsertTokenParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, upsertToken, arg.UserID, arg.P256dhKey, arg.AuthKey)
+	row := q.db.QueryRow(ctx, upsertToken,
+		arg.UserID,
+		arg.P256dhKey,
+		arg.AuthKey,
+		arg.Endpoint,
+	)
 	var user_id uuid.UUID
 	err := row.Scan(&user_id)
 	return user_id, err

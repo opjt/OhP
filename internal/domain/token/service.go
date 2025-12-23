@@ -19,4 +19,7 @@ func (s *TokenService) Register(ctx context.Context, token Token) error {
 	return err
 }
 
-// user token 삭제
+// token 삭제
+func (s *TokenService) Unregister(ctx context.Context, token Token) error {
+	return s.repo.RemoveToken(ctx, token)
+}

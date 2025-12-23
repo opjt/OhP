@@ -15,6 +15,7 @@ type PushToken struct {
 	UserID    uuid.UUID
 	P256dhKey string
 	AuthKey   string
+	Endpoint  string
 	IsActive  bool
 	CreatedAt time.Time
 }

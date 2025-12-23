@@ -24,6 +24,7 @@ func NewPushHandler(log *log.Logger, service *push.PushService) *PushHandler {
 func (h *PushHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/subscribe", wrapper.WrapJson(h.Subscribe, h.log.Error, wrapper.RespondJSON))
+	r.Post("/unsubscribe", wrapper.WrapJson(h.Unsubscribe, h.log.Error, wrapper.RespondJSON))
 	r.Post("/push", wrapper.WrapJson(h.Push, h.log.Error, wrapper.RespondJSON))
 	return r
 }
@@ -46,6 +47,29 @@ func (h *PushHandler) Subscribe(ctx context.Context, req reqSubscribe) (interfac
 	h.log.Info("...", "user", userClaim.UserID)
 	h.log.Info("req", "sub", req)
 	if err := h.service.Subscribe(ctx, push.Subscription{
+		UserID:   userClaim.UserID,
+		Endpoint: req.Endpoint,
+		P256dh:   req.Keys.P256dh,
+		Auth:     req.Keys.Auth,
+	}); err != nil {
+		return nil, err
+	}
+
+	h.log.Info("push subscribe", "endpoint", req.Endpoint)
+
+	return "success1", nil
+}
+
+// Unsubscribe
+func (h *PushHandler) Unsubscribe(ctx context.Context, req reqSubscribe) (interface{}, error) {
+	userClaim, err := token.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	h.log.Info("...", "user", userClaim.UserID)
+	h.log.Info("req", "sub", req)
+	if err := h.service.Unsubscribe(ctx, push.Subscription{
 		UserID:   userClaim.UserID,
 		Endpoint: req.Endpoint,
 		P256dh:   req.Keys.P256dh,
