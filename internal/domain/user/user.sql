@@ -5,3 +5,9 @@ ON CONFLICT (email)
 DO UPDATE SET 
     updated_at = EXCLUDED.updated_at
 RETURNING id, email, created_at, updated_at;
+
+
+-- name: FindById :one
+SELECT id, email, created_at, updated_at
+FROM users
+WHERE id = $1;

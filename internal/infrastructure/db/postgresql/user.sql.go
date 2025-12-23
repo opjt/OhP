@@ -7,7 +7,27 @@ package postgresql
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
+
+const findById = `-- name: FindById :one
+SELECT id, email, created_at, updated_at
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) FindById(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, findById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const upsertUserByEmail = `-- name: UpsertUserByEmail :one
 INSERT INTO users (email, updated_at)

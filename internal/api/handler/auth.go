@@ -15,6 +15,8 @@ type AuthHandler struct {
 	service  *auth.AuthService
 }
 
+const cookieKey = "auth_token"
+
 func NewAuthHandler(log *log.Logger, env config.Env, service *auth.AuthService) *AuthHandler {
 	return &AuthHandler{
 		log:      log,
@@ -25,10 +27,28 @@ func NewAuthHandler(log *log.Logger, env config.Env, service *auth.AuthService) 
 func (h *AuthHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/github/callback", h.OauthGithubCallback)
+	r.Get("/logout", h.Logout)
 
 	return r
 }
 
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, h.frontUrl+"/login", http.StatusFound)
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieKey,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+	http.Redirect(w, r, h.frontUrl, http.StatusFound)
+
+}
 func (h *AuthHandler) OauthGithubCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -46,7 +66,7 @@ func (h *AuthHandler) OauthGithubCallback(w http.ResponseWriter, r *http.Request
 	// 프론트엔드로 JWT 전달 (Cookie 또는 Query Parameter)
 	// 보안상 HttpOnly Cookie를 사용.
 	http.SetCookie(w, &http.Cookie{
-		Name:     "auth_token",
+		Name:     cookieKey,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,  // 자바스크립트 접근 방지

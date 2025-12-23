@@ -1,6 +1,10 @@
 package user
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type UserService struct {
 	repo UserRepository
@@ -14,4 +18,8 @@ func NewUserService(repo UserRepository) *UserService {
 
 func (s *UserService) UpsertUserByEmail(ctx context.Context, email string) (*User, error) {
 	return s.repo.UpsertUserByEmail(ctx, email)
+}
+
+func (s *UserService) FindByEmail(ctx context.Context, id uuid.UUID) (*User, error) {
+	return s.repo.FindByID(ctx, id)
 }

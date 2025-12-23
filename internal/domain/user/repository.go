@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	db "ohp/internal/infrastructure/db/postgresql"
+
+	"github.com/google/uuid"
 )
 
 type userRepository struct {
@@ -10,6 +12,7 @@ type userRepository struct {
 }
 type UserRepository interface {
 	UpsertUserByEmail(context.Context, string) (*User, error)
+	FindByID(context.Context, uuid.UUID) (*User, error)
 }
 
 func NewUserRepository(queries *db.Queries) UserRepository {
@@ -19,8 +22,22 @@ func NewUserRepository(queries *db.Queries) UserRepository {
 }
 
 func (r *userRepository) UpsertUserByEmail(ctx context.Context, email string) (*User, error) {
-
+	// TODO: github oauth에서 email도 변경될 수가 있음
 	user, err := r.queries.UpsertUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	entity := &User{
+		ID:        user.ID,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	}
+	return entity, nil
+}
+
+func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) {
+	user, err := r.queries.FindById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
