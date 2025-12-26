@@ -13,6 +13,7 @@ var ErrDuplicateToken = errors.New("duplicate endpoint token")
 type EndpointRepository interface {
 	Add(ctx context.Context, params insertEndpointParams) error
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]Endpoint, error)
+	RemoveByToken(ctx context.Context, token string, userID uuid.UUID) error
 }
 
 type endpointRepository struct {
@@ -26,11 +27,11 @@ type insertEndpointParams struct {
 }
 
 func NewEndpointRepository(queries *db.Queries) EndpointRepository {
-	return endpointRepository{
+	return &endpointRepository{
 		queries: queries,
 	}
 }
-func (r endpointRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]Endpoint, error) {
+func (r *endpointRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]Endpoint, error) {
 	endpoints, err := r.queries.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (r endpointRepository) FindByUserID(ctx context.Context, userID uuid.UUID) 
 	}
 	return result, nil
 }
-func (r endpointRepository) Add(ctx context.Context, params insertEndpointParams) error {
+func (r *endpointRepository) Add(ctx context.Context, params insertEndpointParams) error {
 	_, err := r.queries.CreateEndpoint(ctx, db.CreateEndpointParams{
 		UserID: params.userID,
 		Name:   params.serviceName,
@@ -60,6 +61,17 @@ func (r endpointRepository) Add(ctx context.Context, params insertEndpointParams
 		}
 		return err
 
+	}
+	return nil
+}
+
+func (r *endpointRepository) RemoveByToken(ctx context.Context, token string, userID uuid.UUID) error {
+	err := r.queries.DeleteEndpointByToken(ctx, db.DeleteEndpointByTokenParams{
+		Token:  token,
+		UserID: userID,
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }

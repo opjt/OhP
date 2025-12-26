@@ -26,6 +26,7 @@ func (h *EndpointHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", wrapper.WrapJson(h.Add, h.log.Error, wrapper.RespondJSON))
 	r.Get("/", h.GetList)
+	r.Delete("/", wrapper.WrapJson(h.Delete, h.log.Error, wrapper.RespondJSON))
 	return r
 }
 
@@ -69,4 +70,18 @@ func (h *EndpointHandler) GetList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wrapper.RespondJSON(w, http.StatusOK, result)
+}
+
+type reqDeleteEndpoint struct {
+	Token string `json:"token"`
+}
+
+func (h *EndpointHandler) Delete(ctx context.Context, req reqDeleteEndpoint) (interface{}, error) {
+
+	if err := h.service.Remove(ctx, req.Token); err != nil {
+		return nil, err
+	}
+
+	return "success", nil
+
 }

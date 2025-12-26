@@ -61,8 +61,16 @@ func (s *EndpointService) Add(ctx context.Context, serviceName string) error {
 	return errors.New("endpoint generate fail")
 }
 
-func (s *EndpointService) Remove(ctx context.Context, endpoint string) error {
+func (s *EndpointService) Remove(ctx context.Context, endpointToken string) error {
+	userClaim, err := token.UserFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
+	err = s.repo.RemoveByToken(ctx, endpointToken, userClaim.UserID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (s *EndpointService) genEndpoint() (string, error) {
