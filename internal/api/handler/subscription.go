@@ -10,22 +10,21 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type PushHandler struct {
+type SubscriptionHandler struct {
 	log     *log.Logger
 	service *push.PushService
 }
 
-func NewPushHandler(log *log.Logger, service *push.PushService) *PushHandler {
-	return &PushHandler{
+func NewSubscriptionHandler(log *log.Logger, service *push.PushService) *SubscriptionHandler {
+	return &SubscriptionHandler{
 		log:     log,
 		service: service,
 	}
 }
-func (h *PushHandler) Routes() chi.Router {
+func (h *SubscriptionHandler) Routes() chi.Router {
 	r := chi.NewRouter()
-	r.Post("/subscribe", wrapper.WrapJson(h.Subscribe, h.log.Error, wrapper.RespondJSON))
+	r.Post("/", wrapper.WrapJson(h.Subscribe, h.log.Error, wrapper.RespondJSON))
 	r.Post("/unsubscribe", wrapper.WrapJson(h.Unsubscribe, h.log.Error, wrapper.RespondJSON))
-	r.Post("/push/{token}", wrapper.WrapJson(h.Push, h.log.Error, wrapper.RespondJSON))
 	return r
 }
 
@@ -37,10 +36,11 @@ type reqSubscribe struct {
 	} `json:"keys"`
 }
 
-// Subscribe, push subscribe
-func (h *PushHandler) Subscribe(ctx context.Context, req reqSubscribe) (interface{}, error) {
+// Subscribe, push notiification
+func (h *SubscriptionHandler) Subscribe(ctx context.Context, req reqSubscribe) (interface{}, error) {
 	userClaim, err := token.UserFromContext(ctx)
 	if err != nil {
+		h.log.Info("...", "error", err)
 		return nil, err
 	}
 
@@ -61,7 +61,7 @@ func (h *PushHandler) Subscribe(ctx context.Context, req reqSubscribe) (interfac
 }
 
 // Unsubscribe
-func (h *PushHandler) Unsubscribe(ctx context.Context, req reqSubscribe) (interface{}, error) {
+func (h *SubscriptionHandler) Unsubscribe(ctx context.Context, req reqSubscribe) (interface{}, error) {
 	userClaim, err := token.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -81,20 +81,4 @@ func (h *PushHandler) Unsubscribe(ctx context.Context, req reqSubscribe) (interf
 	h.log.Info("push subscribe", "endpoint", req.Endpoint)
 
 	return "success1", nil
-}
-
-// Push, notification
-type reqPush struct {
-	EndpointToken string `json:"token"`
-}
-
-func (h *PushHandler) Push(ctx context.Context, req reqPush) (interface{}, error) {
-	token := chi.URLParamFromCtx(ctx, "token")
-	h.log.Info("...", "token", token)
-
-	if err := h.service.Push(ctx, token); err != nil {
-		return nil, err
-	}
-
-	return nil, nil
 }

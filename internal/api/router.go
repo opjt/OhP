@@ -12,10 +12,11 @@ import (
 )
 
 func NewRouter(
-	pushHandler *handler.PushHandler,
+	subscriptionHandler *handler.SubscriptionHandler,
 	authHandler *handler.AuthHandler,
 	userHandler *handler.UserHandler,
 	endpointHandler *handler.EndpointHandler,
+	apiHandler *handler.ApiHandler,
 
 	tokenProvider *token.TokenProvider,
 	env config.Env,
@@ -26,11 +27,12 @@ func NewRouter(
 	r.Use(middleware.Recoverer)
 	r.Use(middle.CorsMiddleware(env.FrontUrl))
 
+	r.Mount("/api", apiHandler.Routes())
 	r.Mount("/auth", authHandler.Routes())
-	r.Mount("/push", pushHandler.Routes())
 
 	r.Group(func(r chi.Router) {
 		r.Use(middle.AuthMiddleware(tokenProvider))
+		r.Mount("/subscriptions", subscriptionHandler.Routes())
 		r.Mount("/users", userHandler.Routes())
 		r.Mount("/endpoints", endpointHandler.Routes())
 	})
@@ -40,10 +42,13 @@ func NewRouter(
 
 var routeModule = fx.Module("router",
 	fx.Provide(
-		handler.NewPushHandler,
+		handler.NewSubscriptionHandler,
 		handler.NewAuthHandler,
 		handler.NewUserHandler,
 		handler.NewEndpointHandler,
+
+		// API
+		handler.NewApiHandler,
 	),
 
 	fx.Provide(NewRouter),
