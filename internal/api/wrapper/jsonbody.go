@@ -37,10 +37,12 @@ func WrapJson[T any](
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var dto T
-		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-			logger("parse json error", "err", err)
-			respond(w, http.StatusBadRequest, err)
-			return
+		if r.Body != http.NoBody {
+			if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+				logger("parse json error", "err", err)
+				respond(w, http.StatusBadRequest, err)
+				return
+			}
 		}
 		res, err := handler(r.Context(), dto)
 		if err != nil {

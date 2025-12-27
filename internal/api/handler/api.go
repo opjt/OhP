@@ -33,12 +33,7 @@ func (h *ApiHandler) Routes() chi.Router {
 	return r
 }
 
-// Push, notification
-type reqPush struct {
-	EndpointToken string `json:"token"`
-}
-
-func (h *ApiHandler) Push(ctx context.Context, req reqPush) (interface{}, error) {
+func (h *ApiHandler) Push(ctx context.Context, _ interface{}) (interface{}, error) {
 	token := chi.URLParamFromCtx(ctx, "token")
 	h.log.Info("...", "token", token)
 
