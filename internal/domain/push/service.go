@@ -7,6 +7,7 @@ import (
 	"ohp/internal/domain/endpoint"
 	"ohp/internal/domain/token"
 	"ohp/internal/pkg/config"
+	"ohp/internal/pkg/log"
 
 	"github.com/SherClockHolmes/webpush-go"
 )
@@ -14,6 +15,7 @@ import (
 type PushService struct {
 	// repo     SubscriptionRepository
 	vapidKey config.Vapid
+	log      *log.Logger
 
 	tokenService    *token.TokenService
 	endpointService *endpoint.EndpointService
@@ -22,12 +24,14 @@ type PushService struct {
 func NewPushService(
 	// repo SubscriptionRepository,
 	env config.Env,
+	log *log.Logger,
 
 	tokenService *token.TokenService,
 	endpointService *endpoint.EndpointService,
 ) *PushService {
 	return &PushService{
 		// repo:            repo,
+		log:             log,
 		vapidKey:        env.Vapid,
 		tokenService:    tokenService,
 		endpointService: endpointService,
@@ -62,26 +66,31 @@ func (s *PushService) Unsubscribe(ctx context.Context, sub Subscription) error {
 }
 
 // Push notification using endpoint token
-func (s *PushService) Push(ctx context.Context, endpointToken string) error {
+func (s *PushService) Push(ctx context.Context, endpointToken string) (uint64, error) {
+	var count uint64
 
 	endpoint, err := s.endpointService.FindByToken(ctx, endpointToken)
 	if err != nil {
-		return err
+		return 0, err
+	}
+	if endpoint == nil {
+		return 0, nil
 	}
 	userID := endpoint.UserID
 
 	tokens, err := s.tokenService.FindByUserID(ctx, userID)
 	if err != nil {
-		return err
+		return count, err
 	}
 
 	for _, token := range tokens {
 		if err := s.pushNotification(token, "title1", "body4"); err != nil {
-			return err
+			return count, err
 		}
+		count = count + 1
 	}
 
-	return nil
+	return count, nil
 }
 
 func (s *PushService) pushNotification(token token.Token, title, body string) error {

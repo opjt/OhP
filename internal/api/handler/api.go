@@ -33,13 +33,18 @@ func (h *ApiHandler) Routes() chi.Router {
 	return r
 }
 
+type resPush struct {
+	Sent uint64 `json:"sent"`
+}
+
 func (h *ApiHandler) Push(ctx context.Context, _ interface{}) (interface{}, error) {
 	token := chi.URLParamFromCtx(ctx, "token")
 	h.log.Info("...", "token", token)
 
-	if err := h.service.Push(ctx, token); err != nil {
+	count, err := h.service.Push(ctx, token)
+	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return resPush{Sent: count}, nil
 }

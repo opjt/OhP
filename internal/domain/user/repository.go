@@ -38,6 +38,7 @@ func (r *userRepository) UpsertUserByEmail(ctx context.Context, email string) (*
 
 func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	user, err := r.queries.FindUserById(ctx, id)
+	// TODO: if result no rows...
 	if err != nil {
 		return nil, err
 	}

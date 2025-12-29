@@ -14,7 +14,7 @@ type EndpointRepository interface {
 	Add(ctx context.Context, params insertEndpointParams) error
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]Endpoint, error)
 	RemoveByToken(ctx context.Context, token string, userID uuid.UUID) error
-	FindByToken(ctx context.Context, token string) (Endpoint, error)
+	FindByToken(ctx context.Context, token string) (*Endpoint, error)
 }
 
 type endpointRepository struct {
@@ -50,21 +50,23 @@ func (r *endpointRepository) FindByUserID(ctx context.Context, userID uuid.UUID)
 	}
 	return result, nil
 }
+func (r *endpointRepository) FindByToken(ctx context.Context, token string) (*Endpoint, error) {
+	rowData, err := r.queries.FindEndpointByToken(ctx, token)
 
-func (r *endpointRepository) FindByToken(ctx context.Context, token string) (Endpoint, error) {
-
-	endpoint, err := r.queries.FindEndpointByToken(ctx, token)
 	if err != nil {
-		return Endpoint{}, err
+		if db.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, err
 	}
-	return Endpoint{
-		ID:        endpoint.ID,
-		Name:      endpoint.Name,
-		Token:     endpoint.Token,
-		CreatedAt: endpoint.CreatedAt,
-		UserID:    endpoint.UserID,
-	}, nil
 
+	return &Endpoint{
+		ID:        rowData.ID,
+		Name:      rowData.Name,
+		Token:     rowData.Token,
+		CreatedAt: rowData.CreatedAt,
+		UserID:    rowData.UserID,
+	}, nil
 }
 func (r *endpointRepository) Add(ctx context.Context, params insertEndpointParams) error {
 	_, err := r.queries.CreateEndpoint(ctx, db.CreateEndpointParams{
