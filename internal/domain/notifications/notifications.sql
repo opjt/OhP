@@ -1,8 +1,13 @@
 -- name: CreateNotification :one
 INSERT INTO notifications (
-    service_id,
+    endpoint_id,
     body
 ) VALUES (
     $1, $2
 )
 RETURNING *;
+
+-- name: UpdateStatusNotification :exec
+UPDATE notifications
+SET status = $2
+WHERE id = $1;

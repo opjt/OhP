@@ -10,7 +10,8 @@ type notiRepository struct {
 }
 
 type NotiRepository interface {
-	Create(context.Context, Noti) error
+	Create(context.Context, Noti) (Noti, error)
+	UpdateStatus(context.Context, Noti) error
 }
 
 func NewNotiRepository(queries *db.Queries) NotiRepository {
@@ -19,10 +20,24 @@ func NewNotiRepository(queries *db.Queries) NotiRepository {
 	}
 }
 
-func (r *notiRepository) Create(ctx context.Context, noti Noti) error {
-	_, err := r.queries.CreateNotification(ctx, db.CreateNotificationParams{
-		ServiceID: noti.ServiceID,
-		Body:      noti.Body,
+func (r *notiRepository) Create(ctx context.Context, noti Noti) (Noti, error) {
+	createdRow, err := r.queries.CreateNotification(ctx, db.CreateNotificationParams{
+		EndpointID: noti.EndpointID,
+		Body:       noti.Body,
+	})
+	entity := Noti{
+		ID:         createdRow.ID,
+		EndpointID: createdRow.EndpointID,
+		Body:       createdRow.Body,
+	}
+	return entity, err
+}
+
+func (r *notiRepository) UpdateStatus(ctx context.Context, noti Noti) error {
+	status := string(noti.Status)
+	err := r.queries.UpdateStatusNotification(ctx, db.UpdateStatusNotificationParams{
+		ID:     noti.ID,
+		Status: &status,
 	})
 	return err
 }

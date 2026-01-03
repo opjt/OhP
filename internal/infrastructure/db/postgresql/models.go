@@ -21,13 +21,14 @@ type Endpoint struct {
 }
 
 type Notification struct {
-	ID        uuid.UUID
-	ServiceID uuid.UUID
-	Body      string
-	IsRead    bool
-	ReadAt    *time.Time
-	IsDeleted bool
-	CreatedAt time.Time
+	ID         uuid.UUID
+	EndpointID uuid.UUID
+	Body       string
+	Status     *string
+	IsRead     bool
+	ReadAt     *time.Time
+	IsDeleted  bool
+	CreatedAt  time.Time
 }
 
 type PushToken struct {

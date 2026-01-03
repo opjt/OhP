@@ -13,30 +13,47 @@ import (
 
 const createNotification = `-- name: CreateNotification :one
 INSERT INTO notifications (
-    service_id,
+    endpoint_id,
     body
 ) VALUES (
     $1, $2
 )
-RETURNING id, service_id, body, is_read, read_at, is_deleted, created_at
+RETURNING id, endpoint_id, body, status, is_read, read_at, is_deleted, created_at
 `
 
 type CreateNotificationParams struct {
-	ServiceID uuid.UUID
-	Body      string
+	EndpointID uuid.UUID
+	Body       string
 }
 
 func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
-	row := q.db.QueryRow(ctx, createNotification, arg.ServiceID, arg.Body)
+	row := q.db.QueryRow(ctx, createNotification, arg.EndpointID, arg.Body)
 	var i Notification
 	err := row.Scan(
 		&i.ID,
-		&i.ServiceID,
+		&i.EndpointID,
 		&i.Body,
+		&i.Status,
 		&i.IsRead,
 		&i.ReadAt,
 		&i.IsDeleted,
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const updateStatusNotification = `-- name: UpdateStatusNotification :exec
+UPDATE notifications
+SET status = $2
+WHERE id = $1
+`
+
+type UpdateStatusNotificationParams struct {
+	ID     uuid.UUID
+	Status *string
+}
+
+func (q *Queries) UpdateStatusNotification(ctx context.Context, arg UpdateStatusNotificationParams) error {
+	_, err := q.db.Exec(ctx, updateStatusNotification, arg.ID, arg.Status)
+	return err
 }

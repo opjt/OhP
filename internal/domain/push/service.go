@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"ohp/internal/domain/endpoint"
+	"ohp/internal/domain/notifications"
 	"ohp/internal/domain/token"
 	"ohp/internal/pkg/config"
 	"ohp/internal/pkg/log"
@@ -13,28 +14,28 @@ import (
 )
 
 type PushService struct {
-	// repo     SubscriptionRepository
 	vapidKey config.Vapid
 	log      *log.Logger
 
 	tokenService    *token.TokenService
 	endpointService *endpoint.EndpointService
+	notiService     *notifications.NotiService
 }
 
 func NewPushService(
-	// repo SubscriptionRepository,
 	env config.Env,
 	log *log.Logger,
 
 	tokenService *token.TokenService,
 	endpointService *endpoint.EndpointService,
+	notiService *notifications.NotiService,
 ) *PushService {
 	return &PushService{
-		// repo:            repo,
 		log:             log,
 		vapidKey:        env.Vapid,
 		tokenService:    tokenService,
 		endpointService: endpointService,
+		notiService:     notiService,
 	}
 }
 
@@ -83,11 +84,22 @@ func (s *PushService) Push(ctx context.Context, endpointToken string, message st
 		return count, err
 	}
 
+	noti, err := s.notiService.Register(ctx, notifications.ReqRegister{
+		EndpointID: endpoint.ID,
+		Body:       message,
+	})
+	if err != nil {
+		return count, err
+	}
+
 	for _, token := range tokens {
 		if err := s.pushNotification(token, endpoint.Name, message); err != nil {
 			return count, err
 		}
 		count = count + 1
+	}
+	if err = s.notiService.UpdateStatusSent(ctx, noti.ID); err != nil {
+		return count, err
 	}
 
 	return count, nil

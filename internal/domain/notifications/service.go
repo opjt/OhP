@@ -1,6 +1,10 @@
 package notifications
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type NotiService struct {
 	repo NotiRepository
@@ -14,6 +18,40 @@ func NewNotiService(
 	}
 }
 
-func (s *NotiService) Register(ctx context.Context, noti Noti) error {
+type ReqRegister struct {
+	EndpointID uuid.UUID
+	Body       string
+}
+
+func (s *NotiService) Register(ctx context.Context, req ReqRegister) (Noti, error) {
+	noti, err := s.repo.Create(ctx, Noti{
+		EndpointID: req.EndpointID,
+		Body:       req.Body,
+	})
+	if err != nil {
+		return Noti{}, err
+	}
+	return noti, nil
+}
+
+type ReqUpdateStatus struct {
+	ID     uuid.UUID
+	Status notiStatus
+}
+
+func (s *NotiService) updateStatus(ctx context.Context, req ReqUpdateStatus) error {
+	err := s.repo.UpdateStatus(ctx, Noti{
+		ID:     req.ID,
+		Status: req.Status,
+	})
+	if err != nil {
+		return err
+	}
 	return nil
+}
+func (s *NotiService) UpdateStatusSent(ctx context.Context, reqID uuid.UUID) error {
+	return s.updateStatus(ctx, ReqUpdateStatus{
+		ID:     reqID,
+		Status: notiStatusSent,
+	})
 }

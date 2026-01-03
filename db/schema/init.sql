@@ -39,8 +39,9 @@ CREATE TABLE
 CREATE TABLE
     notifications (
         id UUID PRIMARY KEY DEFAULT uuidv7(),
-        service_id UUID NOT NULL REFERENCES endpoints (id),
+        endpoint_id UUID NOT NULL REFERENCES endpoints (id),
         body TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
         is_read BOOLEAN NOT NULL DEFAULT false, 
         read_at TIMESTAMP NULL,
         is_deleted BOOLEAN NOT NULL DEFAULT false,
