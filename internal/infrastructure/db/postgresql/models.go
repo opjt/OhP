@@ -23,6 +23,7 @@ type Endpoint struct {
 type Notification struct {
 	ID         uuid.UUID
 	EndpointID uuid.UUID
+	UserID     uuid.UUID
 	Body       string
 	Status     *string
 	IsRead     bool

@@ -86,6 +86,7 @@ func (s *PushService) Push(ctx context.Context, endpointToken string, message st
 
 	noti, err := s.notiService.Register(ctx, notifications.ReqRegister{
 		EndpointID: endpoint.ID,
+		UserID:     userID,
 		Body:       message,
 	})
 	if err != nil {

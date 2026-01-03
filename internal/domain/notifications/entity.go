@@ -1,6 +1,10 @@
 package notifications
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 /*
 notifications
@@ -20,6 +24,20 @@ const (
 type Noti struct {
 	ID         uuid.UUID
 	EndpointID uuid.UUID
+	UserID     uuid.UUID
 	Body       string
 	Status     notiStatus
+	IsRead     bool
+	CreatedAt  time.Time
+	ReadAt     *time.Time
+	IsDeleted  bool
+}
+
+type EndpointInfo struct {
+	Name string
+}
+
+type NotiWithEndpoint struct {
+	Noti
+	EndpointInfo
 }

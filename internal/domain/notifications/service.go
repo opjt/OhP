@@ -18,8 +18,13 @@ func NewNotiService(
 	}
 }
 
+func (s *NotiService) GetList(ctx context.Context, userID uuid.UUID) ([]NotiWithEndpoint, error) {
+	return s.repo.GetList(ctx, userID)
+}
+
 type ReqRegister struct {
 	EndpointID uuid.UUID
+	UserID     uuid.UUID
 	Body       string
 }
 
@@ -27,6 +32,7 @@ func (s *NotiService) Register(ctx context.Context, req ReqRegister) (Noti, erro
 	noti, err := s.repo.Create(ctx, Noti{
 		EndpointID: req.EndpointID,
 		Body:       req.Body,
+		UserID:     req.UserID,
 	})
 	if err != nil {
 		return Noti{}, err

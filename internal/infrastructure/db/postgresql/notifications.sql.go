@@ -7,6 +7,7 @@ package postgresql
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -14,24 +15,27 @@ import (
 const createNotification = `-- name: CreateNotification :one
 INSERT INTO notifications (
     endpoint_id,
+    user_id,
     body
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 )
-RETURNING id, endpoint_id, body, status, is_read, read_at, is_deleted, created_at
+RETURNING id, endpoint_id, user_id, body, status, is_read, read_at, is_deleted, created_at
 `
 
 type CreateNotificationParams struct {
 	EndpointID uuid.UUID
+	UserID     uuid.UUID
 	Body       string
 }
 
 func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
-	row := q.db.QueryRow(ctx, createNotification, arg.EndpointID, arg.Body)
+	row := q.db.QueryRow(ctx, createNotification, arg.EndpointID, arg.UserID, arg.Body)
 	var i Notification
 	err := row.Scan(
 		&i.ID,
 		&i.EndpointID,
+		&i.UserID,
 		&i.Body,
 		&i.Status,
 		&i.IsRead,
@@ -40,6 +44,59 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const findNotificationByUserID = `-- name: FindNotificationByUserID :many
+SELECT 
+    n.id, n.endpoint_id, n.user_id, n.body, n.status, n.is_read, n.read_at, n.is_deleted, n.created_at,
+    e.name as endpoint_name
+FROM notifications n
+JOIN endpoints e ON n.endpoint_id = e.id
+WHERE n.user_id = $1
+`
+
+type FindNotificationByUserIDRow struct {
+	ID           uuid.UUID
+	EndpointID   uuid.UUID
+	UserID       uuid.UUID
+	Body         string
+	Status       *string
+	IsRead       bool
+	ReadAt       *time.Time
+	IsDeleted    bool
+	CreatedAt    time.Time
+	EndpointName string
+}
+
+func (q *Queries) FindNotificationByUserID(ctx context.Context, userID uuid.UUID) ([]FindNotificationByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, findNotificationByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FindNotificationByUserIDRow
+	for rows.Next() {
+		var i FindNotificationByUserIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EndpointID,
+			&i.UserID,
+			&i.Body,
+			&i.Status,
+			&i.IsRead,
+			&i.ReadAt,
+			&i.IsDeleted,
+			&i.CreatedAt,
+			&i.EndpointName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateStatusNotification = `-- name: UpdateStatusNotification :exec
