@@ -17,6 +17,7 @@ type NotiRepository interface {
 	GetList(context.Context, uuid.UUID) ([]NotiWithEndpoint, error)
 	GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]NotiWithEndpoint, error)
 	MarkAsReadBefore(ctx context.Context, userID uuid.UUID, lastID uuid.UUID) error
+	MarkDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
 
 func NewNotiRepository(queries *db.Queries) NotiRepository {
@@ -25,6 +26,13 @@ func NewNotiRepository(queries *db.Queries) NotiRepository {
 	}
 }
 
+func (r *notiRepository) MarkDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+
+	return r.queries.MarkDeleteNotificationByID(ctx, db.MarkDeleteNotificationByIDParams{
+		UserID: userID,
+		ID:     id,
+	})
+}
 func (r *notiRepository) MarkAsReadBefore(ctx context.Context, userID uuid.UUID, lastID uuid.UUID) error {
 	return r.queries.MarkNotificationsAsReadBefore(ctx, db.MarkNotificationsAsReadBeforeParams{
 		UserID: userID,

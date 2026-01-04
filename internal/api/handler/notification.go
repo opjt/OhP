@@ -35,8 +35,26 @@ func (h *NotiHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.GetList)
 	r.Post("/read-until", wrapper.WrapJson(h.Read, h.log.Error, wrapper.RespondJSON))
+	r.Delete("/{id}", wrapper.WrapJson(h.Delete, h.log.Error, wrapper.RespondJSON))
 
 	return r
+}
+
+func (h *NotiHandler) Delete(ctx context.Context, _ interface{}) (interface{}, error) {
+	userClaim, err := token.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	id := chi.URLParamFromCtx(ctx, "id")
+	parsed, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.service.MarkDelete(ctx, userClaim.UserID, parsed)
+	return nil, nil
+
 }
 
 type reqReadNoti struct {

@@ -47,3 +47,9 @@ SET is_read = true,
 WHERE user_id = $1 
   AND is_read = false 
   AND id >= $2; 
+
+-- name: MarkDeleteNotificationByID :exec
+UPDATE notifications
+SET is_deleted = true
+WHERE user_id = $1
+  AND id = $2;  

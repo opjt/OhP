@@ -17,6 +17,10 @@ func NewNotiService(
 		repo: repo,
 	}
 }
+
+func (s *NotiService) MarkDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	return s.repo.MarkDelete(ctx, userID, id)
+}
 func (s *NotiService) MarkAllAsRead(ctx context.Context, userID uuid.UUID, lastID uuid.UUID) error {
 	return s.repo.MarkAsReadBefore(ctx, userID, lastID)
 }

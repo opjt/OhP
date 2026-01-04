@@ -167,6 +167,23 @@ func (q *Queries) GetNotificationsWithCursor(ctx context.Context, arg GetNotific
 	return items, nil
 }
 
+const markDeleteNotificationByID = `-- name: MarkDeleteNotificationByID :exec
+UPDATE notifications
+SET is_deleted = true
+WHERE user_id = $1
+  AND id = $2
+`
+
+type MarkDeleteNotificationByIDParams struct {
+	UserID uuid.UUID
+	ID     uuid.UUID
+}
+
+func (q *Queries) MarkDeleteNotificationByID(ctx context.Context, arg MarkDeleteNotificationByIDParams) error {
+	_, err := q.db.Exec(ctx, markDeleteNotificationByID, arg.UserID, arg.ID)
+	return err
+}
+
 const markNotificationsAsReadBefore = `-- name: MarkNotificationsAsReadBefore :exec
 UPDATE notifications
 SET is_read = true,
