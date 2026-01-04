@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"ohp/internal/pkg/token"
+	"time"
 )
 
 const endpointLength = 11
@@ -31,6 +32,16 @@ func (s *EndpointService) List(ctx context.Context) ([]Endpoint, error) {
 	}
 	return s.repo.FindByUserID(ctx, userClaim.UserID)
 }
+
+func (s *EndpointService) UpdateMute(ctx context.Context, token string, notiEnable bool) error {
+	if notiEnable {
+		return s.repo.UpdateUnmute(ctx, token)
+	} else {
+		disabledTime := time.Now()
+		return s.repo.UpdateMute(ctx, token, &disabledTime)
+	}
+}
+
 func (s *EndpointService) Add(ctx context.Context, serviceName string) error {
 
 	userClaim, err := token.UserFromContext(ctx)

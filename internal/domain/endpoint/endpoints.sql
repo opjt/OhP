@@ -22,3 +22,15 @@ WHERE token = $1;
 DELETE FROM endpoints
 WHERE token = $1
   AND user_id = $2;
+
+-- name: UpdateEndpointMute :exec
+UPDATE endpoints
+SET notification_enabled = false, 
+  notification_disabled_at = $2
+WHERE token = $1;
+
+-- name: UpdateEndpointUnmute :exec
+UPDATE endpoints
+SET notification_enabled = true, 
+  notification_disabled_at = null
+WHERE token = $1;

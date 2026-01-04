@@ -26,7 +26,9 @@ func (h *EndpointHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", wrapper.WrapJson(h.Add, h.log.Error, wrapper.RespondJSON))
 	r.Get("/", h.GetList)
-	r.Delete("/", wrapper.WrapJson(h.Delete, h.log.Error, wrapper.RespondJSON))
+	r.Delete("/{token}", wrapper.WrapJson(h.Delete, h.log.Error, wrapper.RespondJSON))
+	r.Post("/{token}/mute", wrapper.WrapJson(h.Mute, h.log.Error, wrapper.RespondJSON))
+	r.Delete("/{token}/mute", wrapper.WrapJson(h.Unmute, h.log.Error, wrapper.RespondJSON))
 	return r
 }
 
@@ -65,23 +67,39 @@ func (h *EndpointHandler) GetList(w http.ResponseWriter, r *http.Request) {
 			ID:     endpoint.ID,
 			Name:   endpoint.Name,
 			Token:  endpoint.Token,
-			Active: true,
+			Active: endpoint.NotificationEnable,
 		})
 	}
 
 	wrapper.RespondJSON(w, http.StatusOK, result)
 }
 
-type reqDeleteEndpoint struct {
-	Token string `json:"token"`
-}
-
-func (h *EndpointHandler) Delete(ctx context.Context, req reqDeleteEndpoint) (interface{}, error) {
-
-	if err := h.service.Remove(ctx, req.Token); err != nil {
+func (h *EndpointHandler) Delete(ctx context.Context, _ interface{}) (interface{}, error) {
+	token := chi.URLParamFromCtx(ctx, "token")
+	if err := h.service.Remove(ctx, token); err != nil {
 		return nil, err
 	}
 
 	return nil, nil
 
+}
+
+func (h *EndpointHandler) Mute(ctx context.Context, _ interface{}) (interface{}, error) {
+	token := chi.URLParamFromCtx(ctx, "token")
+
+	if err := h.service.UpdateMute(ctx, token, false); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (h *EndpointHandler) Unmute(ctx context.Context, _ interface{}) (interface{}, error) {
+	token := chi.URLParamFromCtx(ctx, "token")
+
+	if err := h.service.UpdateMute(ctx, token, true); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }

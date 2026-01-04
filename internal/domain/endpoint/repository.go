@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	db "ohp/internal/infrastructure/db/postgresql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,22 +16,28 @@ type EndpointRepository interface {
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]Endpoint, error)
 	RemoveByToken(ctx context.Context, token string, userID uuid.UUID) error
 	FindByToken(ctx context.Context, token string) (*Endpoint, error)
+	UpdateMute(ctx context.Context, token string, disabledAt *time.Time) error
+	UpdateUnmute(ctx context.Context, token string) error
 }
 
 type endpointRepository struct {
 	queries *db.Queries
 }
 
-type insertEndpointParams struct {
-	userID      uuid.UUID
-	serviceName string
-	endpoint    string
-}
-
 func NewEndpointRepository(queries *db.Queries) EndpointRepository {
 	return &endpointRepository{
 		queries: queries,
 	}
+}
+
+func (r *endpointRepository) UpdateMute(ctx context.Context, token string, disabledAt *time.Time) error {
+	return r.queries.UpdateEndpointMute(ctx, db.UpdateEndpointMuteParams{
+		Token:                  token,
+		NotificationDisabledAt: disabledAt,
+	})
+}
+func (r *endpointRepository) UpdateUnmute(ctx context.Context, token string) error {
+	return r.queries.UpdateEndpointUnmute(ctx, token)
 }
 func (r *endpointRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]Endpoint, error) {
 	endpoints, err := r.queries.FindEndpointByUserID(ctx, userID)
@@ -41,11 +48,12 @@ func (r *endpointRepository) FindByUserID(ctx context.Context, userID uuid.UUID)
 	var result []Endpoint
 	for _, endpoint := range endpoints {
 		result = append(result, Endpoint{
-			ID:        endpoint.ID,
-			Name:      endpoint.Name,
-			Token:     endpoint.Token,
-			CreatedAt: endpoint.CreatedAt,
-			UserID:    endpoint.UserID,
+			ID:                 endpoint.ID,
+			Name:               endpoint.Name,
+			Token:              endpoint.Token,
+			CreatedAt:          endpoint.CreatedAt,
+			UserID:             endpoint.UserID,
+			NotificationEnable: endpoint.NotificationEnabled,
 		})
 	}
 	return result, nil
@@ -68,6 +76,13 @@ func (r *endpointRepository) FindByToken(ctx context.Context, token string) (*En
 		UserID:    rowData.UserID,
 	}, nil
 }
+
+type insertEndpointParams struct {
+	userID      uuid.UUID
+	serviceName string
+	endpoint    string
+}
+
 func (r *endpointRepository) Add(ctx context.Context, params insertEndpointParams) error {
 	_, err := r.queries.CreateEndpoint(ctx, db.CreateEndpointParams{
 		UserID: params.userID,

@@ -7,6 +7,7 @@ package postgresql
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -112,4 +113,33 @@ func (q *Queries) FindEndpointByUserID(ctx context.Context, userID uuid.UUID) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateEndpointMute = `-- name: UpdateEndpointMute :exec
+UPDATE endpoints
+SET notification_enabled = false, 
+  notification_disabled_at = $2
+WHERE token = $1
+`
+
+type UpdateEndpointMuteParams struct {
+	Token                  string
+	NotificationDisabledAt *time.Time
+}
+
+func (q *Queries) UpdateEndpointMute(ctx context.Context, arg UpdateEndpointMuteParams) error {
+	_, err := q.db.Exec(ctx, updateEndpointMute, arg.Token, arg.NotificationDisabledAt)
+	return err
+}
+
+const updateEndpointUnmute = `-- name: UpdateEndpointUnmute :exec
+UPDATE endpoints
+SET notification_enabled = true, 
+  notification_disabled_at = null
+WHERE token = $1
+`
+
+func (q *Queries) UpdateEndpointUnmute(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, updateEndpointUnmute, token)
+	return err
 }
