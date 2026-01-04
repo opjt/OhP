@@ -14,8 +14,7 @@ type notiRepository struct {
 type NotiRepository interface {
 	Create(context.Context, Noti) (Noti, error)
 	UpdateStatus(context.Context, Noti) error
-	GetList(context.Context, uuid.UUID) ([]NotiWithEndpoint, error)
-	GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]NotiWithEndpoint, error)
+	GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]Noti, error)
 	MarkAsReadBefore(ctx context.Context, userID uuid.UUID, lastID uuid.UUID) error
 	MarkDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
@@ -40,7 +39,7 @@ func (r *notiRepository) MarkAsReadBefore(ctx context.Context, userID uuid.UUID,
 	})
 }
 
-func (r *notiRepository) GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]NotiWithEndpoint, error) {
+func (r *notiRepository) GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]Noti, error) {
 
 	params := db.GetNotificationsWithCursorParams{
 		UserID: userID,
@@ -53,63 +52,35 @@ func (r *notiRepository) GetWithCursor(ctx context.Context, userID uuid.UUID, la
 		return nil, err
 	}
 
-	var result []NotiWithEndpoint
+	var result []Noti
 	for _, row := range rows {
 		var s notiStatus
 		if row.Status != nil {
 			s = notiStatus(*row.Status)
 		}
 
-		result = append(result, NotiWithEndpoint{
-			Noti: Noti{
-				ID:         row.ID,
-				EndpointID: row.EndpointID,
-				UserID:     row.UserID,
-				Body:       row.Body,
-				Status:     s,
-				IsRead:     row.IsRead,
-				ReadAt:     row.ReadAt,
-				CreatedAt:  row.CreatedAt,
-			},
-			EndpointInfo: EndpointInfo{
-				Name: row.EndpointName,
-			},
+		result = append(result, Noti{
+
+			ID:           row.ID,
+			EndpointID:   row.EndpointID,
+			EndpointName: row.EndpointName,
+			UserID:       row.UserID,
+			Body:         row.Body,
+			Status:       s,
+			IsRead:       row.IsRead,
+			ReadAt:       row.ReadAt,
+			CreatedAt:    row.CreatedAt,
 		})
 	}
 
 	return result, nil
 }
 
-func (r *notiRepository) GetList(ctx context.Context, userID uuid.UUID) ([]NotiWithEndpoint, error) {
-	notis, err := r.queries.FindNotificationByUserID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	var result []NotiWithEndpoint
-	for _, noti := range notis {
-		result = append(result, NotiWithEndpoint{
-			Noti: Noti{
-				ID:         noti.ID,
-				EndpointID: noti.EndpointID,
-				Body:       noti.Body,
-				Status:     notiStatus(*noti.Status),
-				IsRead:     noti.IsRead,
-				CreatedAt:  noti.CreatedAt,
-				ReadAt:     noti.ReadAt,
-				IsDeleted:  noti.IsDeleted,
-			},
-			EndpointInfo: EndpointInfo{
-				Name: noti.EndpointName,
-			},
-		})
-	}
-	return result, nil
-}
 func (r *notiRepository) Create(ctx context.Context, noti Noti) (Noti, error) {
 	createdRow, err := r.queries.CreateNotification(ctx, db.CreateNotificationParams{
-		EndpointID: noti.EndpointID,
-		Body:       noti.Body,
-		UserID:     noti.UserID,
+		ID:     *noti.EndpointID,
+		Body:   noti.Body,
+		UserID: noti.UserID,
 	})
 	entity := Noti{
 		ID:         createdRow.ID,

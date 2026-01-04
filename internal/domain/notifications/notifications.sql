@@ -1,11 +1,17 @@
 -- name: CreateNotification :one
 INSERT INTO notifications (
     endpoint_id,
+    endpoint_name,
     user_id,
     body
-) VALUES (
-    $1, $2, $3
 )
+SELECT 
+    e.id, 
+    e.name,
+    $1,    
+    $2    
+FROM endpoints e
+WHERE e.id = $3 
 RETURNING *;
 
 -- name: UpdateStatusNotification :exec
@@ -31,9 +37,8 @@ SELECT
     n.is_read,
     n.read_at,
     n.created_at,
-    e.name AS endpoint_name
+    n.endpoint_name
 FROM notifications n
-JOIN endpoints e ON n.endpoint_id = e.id
 WHERE n.user_id = $1 
   AND n.is_deleted = false
   AND (sqlc.narg('last_id')::uuid IS NULL OR n.id < sqlc.narg('last_id'))

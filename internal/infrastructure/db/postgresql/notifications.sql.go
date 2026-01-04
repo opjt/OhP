@@ -15,26 +15,33 @@ import (
 const createNotification = `-- name: CreateNotification :one
 INSERT INTO notifications (
     endpoint_id,
+    endpoint_name,
     user_id,
     body
-) VALUES (
-    $1, $2, $3
 )
-RETURNING id, endpoint_id, user_id, body, status, is_read, read_at, is_deleted, created_at
+SELECT 
+    e.id, 
+    e.name,
+    $1,    
+    $2    
+FROM endpoints e
+WHERE e.id = $3 
+RETURNING id, endpoint_id, endpoint_name, user_id, body, status, is_read, read_at, is_deleted, created_at
 `
 
 type CreateNotificationParams struct {
-	EndpointID uuid.UUID
-	UserID     uuid.UUID
-	Body       string
+	UserID uuid.UUID
+	Body   string
+	ID     uuid.UUID
 }
 
 func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
-	row := q.db.QueryRow(ctx, createNotification, arg.EndpointID, arg.UserID, arg.Body)
+	row := q.db.QueryRow(ctx, createNotification, arg.UserID, arg.Body, arg.ID)
 	var i Notification
 	err := row.Scan(
 		&i.ID,
 		&i.EndpointID,
+		&i.EndpointName,
 		&i.UserID,
 		&i.Body,
 		&i.Status,
@@ -48,7 +55,7 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 
 const findNotificationByUserID = `-- name: FindNotificationByUserID :many
 SELECT 
-    n.id, n.endpoint_id, n.user_id, n.body, n.status, n.is_read, n.read_at, n.is_deleted, n.created_at,
+    n.id, n.endpoint_id, n.endpoint_name, n.user_id, n.body, n.status, n.is_read, n.read_at, n.is_deleted, n.created_at,
     e.name as endpoint_name
 FROM notifications n
 JOIN endpoints e ON n.endpoint_id = e.id
@@ -56,16 +63,17 @@ WHERE n.user_id = $1
 `
 
 type FindNotificationByUserIDRow struct {
-	ID           uuid.UUID
-	EndpointID   uuid.UUID
-	UserID       uuid.UUID
-	Body         string
-	Status       *string
-	IsRead       bool
-	ReadAt       *time.Time
-	IsDeleted    bool
-	CreatedAt    time.Time
-	EndpointName string
+	ID             uuid.UUID
+	EndpointID     *uuid.UUID
+	EndpointName   string
+	UserID         uuid.UUID
+	Body           string
+	Status         *string
+	IsRead         bool
+	ReadAt         *time.Time
+	IsDeleted      bool
+	CreatedAt      time.Time
+	EndpointName_2 string
 }
 
 func (q *Queries) FindNotificationByUserID(ctx context.Context, userID uuid.UUID) ([]FindNotificationByUserIDRow, error) {
@@ -80,6 +88,7 @@ func (q *Queries) FindNotificationByUserID(ctx context.Context, userID uuid.UUID
 		if err := rows.Scan(
 			&i.ID,
 			&i.EndpointID,
+			&i.EndpointName,
 			&i.UserID,
 			&i.Body,
 			&i.Status,
@@ -87,7 +96,7 @@ func (q *Queries) FindNotificationByUserID(ctx context.Context, userID uuid.UUID
 			&i.ReadAt,
 			&i.IsDeleted,
 			&i.CreatedAt,
-			&i.EndpointName,
+			&i.EndpointName_2,
 		); err != nil {
 			return nil, err
 		}
@@ -109,9 +118,8 @@ SELECT
     n.is_read,
     n.read_at,
     n.created_at,
-    e.name AS endpoint_name
+    n.endpoint_name
 FROM notifications n
-JOIN endpoints e ON n.endpoint_id = e.id
 WHERE n.user_id = $1 
   AND n.is_deleted = false
   AND ($3::uuid IS NULL OR n.id < $3)
@@ -127,7 +135,7 @@ type GetNotificationsWithCursorParams struct {
 
 type GetNotificationsWithCursorRow struct {
 	ID           uuid.UUID
-	EndpointID   uuid.UUID
+	EndpointID   *uuid.UUID
 	UserID       uuid.UUID
 	Body         string
 	Status       *string

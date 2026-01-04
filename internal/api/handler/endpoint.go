@@ -82,6 +82,6 @@ func (h *EndpointHandler) Delete(ctx context.Context, req reqDeleteEndpoint) (in
 		return nil, err
 	}
 
-	return "success", nil
+	return nil, nil
 
 }

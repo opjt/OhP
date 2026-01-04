@@ -125,11 +125,11 @@ func (h *NotiHandler) GetList(w http.ResponseWriter, r *http.Request) {
 	items := make([]resNoti, len(notis))
 	for i, noti := range notis {
 		items[i] = resNoti{
-			ID:           noti.Noti.ID,
-			EndpointName: noti.EndpointInfo.Name,
-			Body:         noti.Noti.Body,
-			IsRead:       noti.Noti.IsRead,
-			CreatedAt:    noti.Noti.CreatedAt,
+			ID:           noti.ID,
+			EndpointName: noti.EndpointName,
+			Body:         noti.Body,
+			IsRead:       noti.IsRead,
+			CreatedAt:    noti.CreatedAt,
 		}
 	}
 
