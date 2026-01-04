@@ -99,6 +99,74 @@ func (q *Queries) FindNotificationByUserID(ctx context.Context, userID uuid.UUID
 	return items, nil
 }
 
+const getNotificationsWithCursor = `-- name: GetNotificationsWithCursor :many
+SELECT 
+    n.id,
+    n.endpoint_id,
+    n.user_id,
+    n.body,
+    n.status,
+    n.is_read,
+    n.read_at,
+    n.created_at,
+    e.name AS endpoint_name
+FROM notifications n
+JOIN endpoints e ON n.endpoint_id = e.id
+WHERE n.user_id = $1 
+  AND n.is_deleted = false
+  AND ($3::uuid IS NULL OR n.id < $3)
+ORDER BY n.id DESC
+LIMIT $2
+`
+
+type GetNotificationsWithCursorParams struct {
+	UserID uuid.UUID
+	Limit  int32
+	LastID *uuid.UUID
+}
+
+type GetNotificationsWithCursorRow struct {
+	ID           uuid.UUID
+	EndpointID   uuid.UUID
+	UserID       uuid.UUID
+	Body         string
+	Status       *string
+	IsRead       bool
+	ReadAt       *time.Time
+	CreatedAt    time.Time
+	EndpointName string
+}
+
+func (q *Queries) GetNotificationsWithCursor(ctx context.Context, arg GetNotificationsWithCursorParams) ([]GetNotificationsWithCursorRow, error) {
+	rows, err := q.db.Query(ctx, getNotificationsWithCursor, arg.UserID, arg.Limit, arg.LastID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNotificationsWithCursorRow
+	for rows.Next() {
+		var i GetNotificationsWithCursorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EndpointID,
+			&i.UserID,
+			&i.Body,
+			&i.Status,
+			&i.IsRead,
+			&i.ReadAt,
+			&i.CreatedAt,
+			&i.EndpointName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateStatusNotification = `-- name: UpdateStatusNotification :exec
 UPDATE notifications
 SET status = $2

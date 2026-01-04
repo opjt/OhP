@@ -21,6 +21,10 @@ func NewNotiService(
 func (s *NotiService) GetList(ctx context.Context, userID uuid.UUID) ([]NotiWithEndpoint, error) {
 	return s.repo.GetList(ctx, userID)
 }
+func (s *NotiService) GetListWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]NotiWithEndpoint, error) {
+
+	return s.repo.GetWithCursor(ctx, userID, lastID, limit)
+}
 
 type ReqRegister struct {
 	EndpointID uuid.UUID

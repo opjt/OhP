@@ -15,12 +15,53 @@ type NotiRepository interface {
 	Create(context.Context, Noti) (Noti, error)
 	UpdateStatus(context.Context, Noti) error
 	GetList(context.Context, uuid.UUID) ([]NotiWithEndpoint, error)
+	GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]NotiWithEndpoint, error)
 }
 
 func NewNotiRepository(queries *db.Queries) NotiRepository {
 	return &notiRepository{
 		queries: queries,
 	}
+}
+
+func (r *notiRepository) GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]NotiWithEndpoint, error) {
+
+	params := db.GetNotificationsWithCursorParams{
+		UserID: userID,
+		Limit:  limit,
+		LastID: lastID,
+	}
+
+	rows, err := r.queries.GetNotificationsWithCursor(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []NotiWithEndpoint
+	for _, row := range rows {
+		var s notiStatus
+		if row.Status != nil {
+			s = notiStatus(*row.Status)
+		}
+
+		result = append(result, NotiWithEndpoint{
+			Noti: Noti{
+				ID:         row.ID,
+				EndpointID: row.EndpointID,
+				UserID:     row.UserID,
+				Body:       row.Body,
+				Status:     s,
+				IsRead:     row.IsRead,
+				ReadAt:     row.ReadAt,
+				CreatedAt:  row.CreatedAt,
+			},
+			EndpointInfo: EndpointInfo{
+				Name: row.EndpointName,
+			},
+		})
+	}
+
+	return result, nil
 }
 
 func (r *notiRepository) GetList(ctx context.Context, userID uuid.UUID) ([]NotiWithEndpoint, error) {

@@ -5,6 +5,9 @@ overrides:
       - db_type: "uuid"
         engine: "postgresql"
         go_type: "github.com/google/uuid.UUID"
+      - db_type: "uuid"
+        nullable: true
+        go_type: "*github.com/google/uuid.UUID" # 포인터 타입으로 지정
       - db_type: "pg_catalog.timestamp"
         engine: "postgresql"
         go_type:
