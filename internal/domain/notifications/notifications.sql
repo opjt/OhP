@@ -14,6 +14,26 @@ FROM endpoints e
 WHERE e.id = $3 
 RETURNING *;
 
+-- name: CreateMuteNotification :one
+INSERT INTO notifications (
+    endpoint_id,
+    endpoint_name,
+    user_id,
+    body,
+    status,
+    is_read
+)
+SELECT 
+    e.id, 
+    e.name,
+    $1,    
+    $2,
+    $3, 
+    true
+FROM endpoints e
+WHERE e.id = $4
+RETURNING *;
+
 -- name: UpdateStatusNotification :exec
 UPDATE notifications
 SET status = $2

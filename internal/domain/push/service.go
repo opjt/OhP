@@ -68,9 +68,9 @@ func (s *PushService) Unsubscribe(ctx context.Context, sub Subscription) error {
 
 // Push notification using endpoint token
 func (s *PushService) Push(ctx context.Context, endpointToken string, message string) (uint64, error) {
-	var count uint64
 
 	endpoint, err := s.endpointService.FindByToken(ctx, endpointToken)
+
 	if err != nil {
 		return 0, err
 	}
@@ -81,20 +81,25 @@ func (s *PushService) Push(ctx context.Context, endpointToken string, message st
 
 	tokens, err := s.tokenService.FindByUserID(ctx, userID)
 	if err != nil {
-		return count, err
+		return 0, err
 	}
 
 	noti, err := s.notiService.Register(ctx, notifications.ReqRegister{
-		EndpointID: endpoint.ID,
-		UserID:     userID,
-		Body:       message,
+		EndpointID:         endpoint.ID,
+		UserID:             userID,
+		Body:               message,
+		NotificationEnable: endpoint.NotificationEnable,
 	})
-	if err != nil {
-		return count, err
+
+	if endpoint.NotificationEnable == false {
+		return 0, err
 	}
+
+	var count uint64
 
 	for _, token := range tokens {
 		if err := s.pushNotification(token, endpoint.Name, message); err != nil {
+			// TODO: 에러 처리 개선 필요.
 			return count, err
 		}
 		count = count + 1

@@ -13,6 +13,7 @@ type notiRepository struct {
 
 type NotiRepository interface {
 	Create(context.Context, Noti) (Noti, error)
+	InsertMute(context.Context, Noti) (Noti, error)
 	UpdateStatus(context.Context, Noti) error
 	GetWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32) ([]Noti, error)
 	MarkAsReadBefore(ctx context.Context, userID uuid.UUID, lastID uuid.UUID) error
@@ -23,6 +24,23 @@ func NewNotiRepository(queries *db.Queries) NotiRepository {
 	return &notiRepository{
 		queries: queries,
 	}
+}
+
+func (r *notiRepository) InsertMute(ctx context.Context, noti Noti) (Noti, error) {
+	statusStr := string(noti.Status)
+	createdRow, err := r.queries.CreateMuteNotification(ctx, db.CreateMuteNotificationParams{
+		UserID: noti.UserID,
+		Body:   noti.Body,
+		Status: &statusStr,
+		ID:     *noti.EndpointID,
+	})
+	entity := Noti{
+		ID:         createdRow.ID,
+		EndpointID: createdRow.EndpointID,
+		Body:       createdRow.Body,
+	}
+	return entity, err
+
 }
 
 func (r *notiRepository) MarkDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {

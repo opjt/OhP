@@ -82,6 +82,7 @@ type resNoti struct {
 	Body         string    `json:"body"`
 	IsRead       bool      `json:"is_read"`
 	CreatedAt    time.Time `json:"created_at"`
+	Mute         bool      `json:"mute"`
 }
 
 // 무한 스크롤 전용 응답 컨테이너
@@ -130,6 +131,7 @@ func (h *NotiHandler) GetList(w http.ResponseWriter, r *http.Request) {
 			Body:         noti.Body,
 			IsRead:       noti.IsRead,
 			CreatedAt:    noti.CreatedAt,
+			Mute:         noti.IsMute(),
 		}
 	}
 

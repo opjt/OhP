@@ -12,6 +12,57 @@ import (
 	"github.com/google/uuid"
 )
 
+const createMuteNotification = `-- name: CreateMuteNotification :one
+INSERT INTO notifications (
+    endpoint_id,
+    endpoint_name,
+    user_id,
+    body,
+    status,
+    is_read
+)
+SELECT 
+    e.id, 
+    e.name,
+    $1,    
+    $2,
+    $3, 
+    true
+FROM endpoints e
+WHERE e.id = $4
+RETURNING id, endpoint_id, endpoint_name, user_id, body, status, is_read, read_at, is_deleted, created_at
+`
+
+type CreateMuteNotificationParams struct {
+	UserID uuid.UUID
+	Body   string
+	Status *string
+	ID     uuid.UUID
+}
+
+func (q *Queries) CreateMuteNotification(ctx context.Context, arg CreateMuteNotificationParams) (Notification, error) {
+	row := q.db.QueryRow(ctx, createMuteNotification,
+		arg.UserID,
+		arg.Body,
+		arg.Status,
+		arg.ID,
+	)
+	var i Notification
+	err := row.Scan(
+		&i.ID,
+		&i.EndpointID,
+		&i.EndpointName,
+		&i.UserID,
+		&i.Body,
+		&i.Status,
+		&i.IsRead,
+		&i.ReadAt,
+		&i.IsDeleted,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createNotification = `-- name: CreateNotification :one
 INSERT INTO notifications (
     endpoint_id,

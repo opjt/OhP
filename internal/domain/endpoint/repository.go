@@ -69,11 +69,12 @@ func (r *endpointRepository) FindByToken(ctx context.Context, token string) (*En
 	}
 
 	return &Endpoint{
-		ID:        rowData.ID,
-		Name:      rowData.Name,
-		Token:     rowData.Token,
-		CreatedAt: rowData.CreatedAt,
-		UserID:    rowData.UserID,
+		ID:                 rowData.ID,
+		Name:               rowData.Name,
+		Token:              rowData.Token,
+		CreatedAt:          rowData.CreatedAt,
+		UserID:             rowData.UserID,
+		NotificationEnable: rowData.NotificationEnabled,
 	}, nil
 }
 

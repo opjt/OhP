@@ -19,6 +19,7 @@ const (
 	notiStatusPending notiStatus = "pending" // default
 	notiStatusSent    notiStatus = "sent"    // push 전송 완료
 	notiStatusFailed  notiStatus = "failed"  // push 전송 실패
+	notiStatusMute    notiStatus = "mute"    // endpoint의 알림 끈 경우
 )
 
 type Noti struct {
@@ -32,4 +33,8 @@ type Noti struct {
 	CreatedAt    time.Time
 	ReadAt       *time.Time
 	IsDeleted    bool
+}
+
+func (n *Noti) IsMute() bool {
+	return n.Status == notiStatusMute
 }

@@ -31,21 +31,24 @@ func (s *NotiService) GetListWithCursor(ctx context.Context, userID uuid.UUID, l
 }
 
 type ReqRegister struct {
-	EndpointID uuid.UUID
-	UserID     uuid.UUID
-	Body       string
+	EndpointID         uuid.UUID
+	UserID             uuid.UUID
+	Body               string
+	NotificationEnable bool
 }
 
-func (s *NotiService) Register(ctx context.Context, req ReqRegister) (Noti, error) {
-	noti, err := s.repo.Create(ctx, Noti{
+func (s *NotiService) Register(ctx context.Context, req ReqRegister) (noti Noti, err error) {
+	newNoti := Noti{
 		EndpointID: &req.EndpointID,
 		Body:       req.Body,
 		UserID:     req.UserID,
-	})
-	if err != nil {
-		return Noti{}, err
 	}
-	return noti, nil
+
+	if req.NotificationEnable == false {
+		newNoti.Status = notiStatusMute
+		return s.repo.InsertMute(ctx, newNoti)
+	}
+	return s.repo.Create(ctx, newNoti)
 }
 
 type ReqUpdateStatus struct {
