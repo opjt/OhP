@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"ohp/internal/api/wrapper"
 	"ohp/internal/domain/push"
 	"ohp/internal/pkg/config"
 	"ohp/internal/pkg/log"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -30,8 +33,27 @@ func NewApiHandler(
 func (h *ApiHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/push/{token}", h.Push)
+	r.Post("/push/test", wrapper.WrapJson(h.TestPush, h.log.Error, wrapper.RespondJSON))
 
 	return r
+}
+
+type reqTestPush struct {
+	Endpoint string `json:"endpoint"`
+}
+
+func (h *ApiHandler) TestPush(ctx context.Context, req reqTestPush) (interface{}, error) {
+
+	h.log.Info("req", "sub", req)
+
+	if err := h.service.PushByEndpoint(ctx, req.Endpoint, fmt.Sprintf(
+		"Hello World %s",
+		time.Now().Format("2006-01-02 15:04:05"),
+	)); err != nil {
+		return nil, err
+	}
+	return nil, nil
+
 }
 
 type resPush struct {

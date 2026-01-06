@@ -31,3 +31,7 @@ func (s *TokenService) Unregister(ctx context.Context, token Token) error {
 func (s *TokenService) FindByUserID(ctx context.Context, userID uuid.UUID) ([]Token, error) {
 	return s.repo.FindByUserID(ctx, userID)
 }
+
+func (s *TokenService) FindByEndpoint(ctx context.Context, endpoint string) (*Token, error) {
+	return s.repo.FindByEndpoint(ctx, endpoint)
+}

@@ -29,6 +29,26 @@ func (q *Queries) DeleteToken(ctx context.Context, arg DeleteTokenParams) error 
 	return err
 }
 
+const findTokenByEndpoint = `-- name: FindTokenByEndpoint :one
+SELECT id, user_id, p256dh_key, auth_key, endpoint, is_active, created_at FROM push_tokens
+WHERE endpoint = $1
+`
+
+func (q *Queries) FindTokenByEndpoint(ctx context.Context, endpoint string) (PushToken, error) {
+	row := q.db.QueryRow(ctx, findTokenByEndpoint, endpoint)
+	var i PushToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.P256dhKey,
+		&i.AuthKey,
+		&i.Endpoint,
+		&i.IsActive,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const findTokenByUserID = `-- name: FindTokenByUserID :many
 SELECT id, user_id, p256dh_key, auth_key, endpoint, is_active, created_at FROM push_tokens
 WHERE user_id = $1

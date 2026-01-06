@@ -18,6 +18,7 @@ WHERE user_id = $1;
 SELECT * FROM endpoints
 WHERE token = $1;
 
+
 -- name: DeleteEndpointByToken :exec
 DELETE FROM endpoints
 WHERE token = $1

@@ -20,3 +20,7 @@ WHERE endpoint = $1
 -- name: FindTokenByUserID :many
 SELECT * FROM push_tokens
 WHERE user_id = $1;
+
+-- name: FindTokenByEndpoint :one
+SELECT * FROM push_tokens
+WHERE endpoint = $1;

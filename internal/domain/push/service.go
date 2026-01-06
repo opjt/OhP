@@ -3,6 +3,7 @@ package push
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"ohp/internal/domain/endpoint"
 	"ohp/internal/domain/notifications"
@@ -64,6 +65,23 @@ func (s *PushService) Unsubscribe(ctx context.Context, sub Subscription) error {
 	}
 
 	return nil
+}
+
+func (s *PushService) PushByEndpoint(ctx context.Context, endpoint string, message string) error {
+	token, err := s.tokenService.FindByEndpoint(ctx, endpoint)
+	if err != nil {
+		return err
+	}
+	if token == nil {
+		return errors.New("endpoint not found")
+	}
+
+	if err := s.pushNotification(*token, "TEST!", message); err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 // Push notification using endpoint token

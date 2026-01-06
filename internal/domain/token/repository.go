@@ -11,6 +11,7 @@ type TokenRepository interface {
 	UpsertToken(ctx context.Context, token Token) (uuid.UUID, error)
 	RemoveToken(ctx context.Context, token Token) error
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]Token, error)
+	FindByEndpoint(ctx context.Context, endpoint string) (*Token, error)
 }
 
 type tokenRepository struct {
@@ -23,6 +24,23 @@ func NewTokenRepository(queries *db.Queries) TokenRepository {
 	}
 }
 
+func (r *tokenRepository) FindByEndpoint(ctx context.Context, endpoint string) (*Token, error) {
+
+	token, err := r.queries.FindTokenByEndpoint(ctx, endpoint)
+	if err != nil {
+		if db.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &Token{
+		ID:       token.ID,
+		UserID:   token.UserID,
+		P256dh:   token.P256dhKey,
+		Auth:     token.AuthKey,
+		EndPoint: token.Endpoint,
+	}, nil
+}
 func (r *tokenRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]Token, error) {
 
 	tokens, err := r.queries.FindTokenByUserID(ctx, userID)
