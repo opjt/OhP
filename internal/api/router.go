@@ -21,6 +21,8 @@ func NewRouter(
 
 	tokenProvider *token.TokenProvider,
 	env config.Env,
+
+	limitMiddleware *middle.RateLimiterManager,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -28,7 +30,8 @@ func NewRouter(
 	r.Use(middleware.Recoverer)
 	r.Use(middle.CorsMiddleware(env.FrontUrl))
 
-	r.Mount("/api", apiHandler.Routes())
+	r.With(middle.RateLimitMiddleware(limitMiddleware)).Mount("/api", apiHandler.Routes())
+	// r.Mount("/api", apiHandler.Routes())
 	r.Mount("/auth", authHandler.Routes())
 
 	r.Group(func(r chi.Router) {
@@ -55,4 +58,7 @@ var routeModule = fx.Module("router",
 	),
 
 	fx.Provide(NewRouter),
+	fx.Provide(
+		middle.NewRateLimiterManager,
+	),
 )
