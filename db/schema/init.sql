@@ -44,7 +44,6 @@ CREATE TABLE
         user_id UUID NOT NULL REFERENCES users (id),
         body TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
-        is_read BOOLEAN NOT NULL DEFAULT false, 
         read_at TIMESTAMP NULL,
         is_deleted BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMP NOT NULL DEFAULT now()

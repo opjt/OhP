@@ -85,7 +85,6 @@ func (r *notiRepository) GetWithCursor(ctx context.Context, userID uuid.UUID, la
 			UserID:       row.UserID,
 			Body:         row.Body,
 			Status:       s,
-			IsRead:       row.IsRead,
 			ReadAt:       row.ReadAt,
 			CreatedAt:    row.CreatedAt,
 		})

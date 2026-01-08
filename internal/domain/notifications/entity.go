@@ -29,7 +29,6 @@ type Noti struct {
 	UserID       uuid.UUID
 	Body         string
 	Status       notiStatus
-	IsRead       bool
 	CreatedAt    time.Time
 	ReadAt       *time.Time
 	IsDeleted    bool

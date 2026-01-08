@@ -129,7 +129,7 @@ func (h *NotiHandler) GetList(w http.ResponseWriter, r *http.Request) {
 			ID:           noti.ID,
 			EndpointName: noti.EndpointName,
 			Body:         noti.Body,
-			IsRead:       noti.IsRead,
+			IsRead:       bool(noti.ReadAt != nil),
 			CreatedAt:    noti.CreatedAt,
 			Mute:         noti.IsMute(),
 		}

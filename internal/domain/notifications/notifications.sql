@@ -21,7 +21,7 @@ INSERT INTO notifications (
     user_id,
     body,
     status,
-    is_read
+    read_at
 )
 SELECT 
     e.id, 
@@ -29,7 +29,7 @@ SELECT
     $1,    
     $2,
     $3, 
-    true
+    now()
 FROM endpoints e
 WHERE e.id = $4
 RETURNING *;
@@ -54,7 +54,6 @@ SELECT
     n.user_id,
     n.body,
     n.status,
-    n.is_read,
     n.read_at,
     n.created_at,
     n.endpoint_name
@@ -67,10 +66,8 @@ LIMIT $2;
 
 -- name: MarkNotificationsAsReadBefore :exec
 UPDATE notifications
-SET is_read = true,
-    read_at = now()
+SET read_at = now()
 WHERE user_id = $1 
-  AND is_read = false 
   AND id >= $2; 
 
 -- name: MarkDeleteNotificationByID :exec

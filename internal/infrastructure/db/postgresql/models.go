@@ -27,7 +27,6 @@ type Notification struct {
 	UserID       uuid.UUID
 	Body         string
 	Status       *string
-	IsRead       bool
 	ReadAt       *time.Time
 	IsDeleted    bool
 	CreatedAt    time.Time

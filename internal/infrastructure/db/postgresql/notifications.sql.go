@@ -19,7 +19,7 @@ INSERT INTO notifications (
     user_id,
     body,
     status,
-    is_read
+    read_at
 )
 SELECT 
     e.id, 
@@ -27,10 +27,10 @@ SELECT
     $1,    
     $2,
     $3, 
-    true
+    now()
 FROM endpoints e
 WHERE e.id = $4
-RETURNING id, endpoint_id, endpoint_name, user_id, body, status, is_read, read_at, is_deleted, created_at
+RETURNING id, endpoint_id, endpoint_name, user_id, body, status, read_at, is_deleted, created_at
 `
 
 type CreateMuteNotificationParams struct {
@@ -55,7 +55,6 @@ func (q *Queries) CreateMuteNotification(ctx context.Context, arg CreateMuteNoti
 		&i.UserID,
 		&i.Body,
 		&i.Status,
-		&i.IsRead,
 		&i.ReadAt,
 		&i.IsDeleted,
 		&i.CreatedAt,
@@ -77,7 +76,7 @@ SELECT
     $2    
 FROM endpoints e
 WHERE e.id = $3 
-RETURNING id, endpoint_id, endpoint_name, user_id, body, status, is_read, read_at, is_deleted, created_at
+RETURNING id, endpoint_id, endpoint_name, user_id, body, status, read_at, is_deleted, created_at
 `
 
 type CreateNotificationParams struct {
@@ -96,7 +95,6 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 		&i.UserID,
 		&i.Body,
 		&i.Status,
-		&i.IsRead,
 		&i.ReadAt,
 		&i.IsDeleted,
 		&i.CreatedAt,
@@ -106,7 +104,7 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 
 const findNotificationByUserID = `-- name: FindNotificationByUserID :many
 SELECT 
-    n.id, n.endpoint_id, n.endpoint_name, n.user_id, n.body, n.status, n.is_read, n.read_at, n.is_deleted, n.created_at,
+    n.id, n.endpoint_id, n.endpoint_name, n.user_id, n.body, n.status, n.read_at, n.is_deleted, n.created_at,
     e.name as endpoint_name
 FROM notifications n
 JOIN endpoints e ON n.endpoint_id = e.id
@@ -120,7 +118,6 @@ type FindNotificationByUserIDRow struct {
 	UserID         uuid.UUID
 	Body           string
 	Status         *string
-	IsRead         bool
 	ReadAt         *time.Time
 	IsDeleted      bool
 	CreatedAt      time.Time
@@ -143,7 +140,6 @@ func (q *Queries) FindNotificationByUserID(ctx context.Context, userID uuid.UUID
 			&i.UserID,
 			&i.Body,
 			&i.Status,
-			&i.IsRead,
 			&i.ReadAt,
 			&i.IsDeleted,
 			&i.CreatedAt,
@@ -166,7 +162,6 @@ SELECT
     n.user_id,
     n.body,
     n.status,
-    n.is_read,
     n.read_at,
     n.created_at,
     n.endpoint_name
@@ -190,7 +185,6 @@ type GetNotificationsWithCursorRow struct {
 	UserID       uuid.UUID
 	Body         string
 	Status       *string
-	IsRead       bool
 	ReadAt       *time.Time
 	CreatedAt    time.Time
 	EndpointName string
@@ -211,7 +205,6 @@ func (q *Queries) GetNotificationsWithCursor(ctx context.Context, arg GetNotific
 			&i.UserID,
 			&i.Body,
 			&i.Status,
-			&i.IsRead,
 			&i.ReadAt,
 			&i.CreatedAt,
 			&i.EndpointName,
@@ -245,10 +238,8 @@ func (q *Queries) MarkDeleteNotificationByID(ctx context.Context, arg MarkDelete
 
 const markNotificationsAsReadBefore = `-- name: MarkNotificationsAsReadBefore :exec
 UPDATE notifications
-SET is_read = true,
-    read_at = now()
+SET read_at = now()
 WHERE user_id = $1 
-  AND is_read = false 
   AND id >= $2
 `
 
