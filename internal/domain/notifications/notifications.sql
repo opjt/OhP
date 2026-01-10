@@ -68,8 +68,10 @@ LIMIT $2;
 -- name: MarkNotificationsAsReadBefore :exec
 UPDATE notifications
 SET read_at = now()
-WHERE user_id = $1 
-  AND id >= $2; 
+WHERE user_id = $1
+  AND read_at is NULL
+  AND (sqlc.narg('endpoint_id')::uuid IS NULL OR endpoint_id = sqlc.narg('endpoint_id'))
+  AND id >= $2;
 
 -- name: MarkDeleteNotificationByID :exec
 UPDATE notifications

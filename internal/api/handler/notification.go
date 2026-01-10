@@ -58,17 +58,18 @@ func (h *NotiHandler) Delete(ctx context.Context, _ interface{}) (interface{}, e
 }
 
 type reqReadNoti struct {
-	LastID uuid.UUID `json:"last_id"`
+	LastID     uuid.UUID  `json:"last_id"`
+	EndpointID *uuid.UUID `json:"endpoint_id"`
 }
 
 func (h *NotiHandler) Read(ctx context.Context, req reqReadNoti) (interface{}, error) {
-	h.log.Info("...", "last_id", req.LastID)
+	h.log.Info("...", "last_id", req)
 	userClaim, err := token.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = h.service.MarkAllAsRead(ctx, userClaim.UserID, req.LastID)
+	err = h.service.MarkAllAsRead(ctx, userClaim.UserID, req.LastID, req.EndpointID)
 	if err != nil {
 		return nil, err
 	}

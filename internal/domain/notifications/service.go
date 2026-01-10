@@ -21,8 +21,8 @@ func NewNotiService(
 func (s *NotiService) MarkDelete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
 	return s.repo.MarkDelete(ctx, userID, id)
 }
-func (s *NotiService) MarkAllAsRead(ctx context.Context, userID uuid.UUID, lastID uuid.UUID) error {
-	return s.repo.MarkAsReadBefore(ctx, userID, lastID)
+func (s *NotiService) MarkAllAsRead(ctx context.Context, userID uuid.UUID, lastID uuid.UUID, endpointID *uuid.UUID) error {
+	return s.repo.MarkAsReadBefore(ctx, userID, lastID, endpointID)
 }
 
 func (s *NotiService) GetListWithCursor(ctx context.Context, userID uuid.UUID, lastID *uuid.UUID, limit int32, endpointID *uuid.UUID) ([]Noti, error) {

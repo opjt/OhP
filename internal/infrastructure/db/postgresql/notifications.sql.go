@@ -246,17 +246,20 @@ func (q *Queries) MarkDeleteNotificationByID(ctx context.Context, arg MarkDelete
 const markNotificationsAsReadBefore = `-- name: MarkNotificationsAsReadBefore :exec
 UPDATE notifications
 SET read_at = now()
-WHERE user_id = $1 
+WHERE user_id = $1
+  AND read_at is NULL
+  AND ($3::uuid IS NULL OR endpoint_id = $3)
   AND id >= $2
 `
 
 type MarkNotificationsAsReadBeforeParams struct {
-	UserID uuid.UUID
-	ID     uuid.UUID
+	UserID     uuid.UUID
+	ID         uuid.UUID
+	EndpointID *uuid.UUID
 }
 
 func (q *Queries) MarkNotificationsAsReadBefore(ctx context.Context, arg MarkNotificationsAsReadBeforeParams) error {
-	_, err := q.db.Exec(ctx, markNotificationsAsReadBefore, arg.UserID, arg.ID)
+	_, err := q.db.Exec(ctx, markNotificationsAsReadBefore, arg.UserID, arg.ID, arg.EndpointID)
 	return err
 }
 
