@@ -15,6 +15,9 @@ func NewUserService(repo UserRepository) *UserService {
 		repo: repo,
 	}
 }
+func (s *UserService) TermsAgree(ctx context.Context, userID uuid.UUID) error {
+	return s.repo.TermsAgree(ctx, userID)
+}
 
 func (s *UserService) UpsertUserByEmail(ctx context.Context, email string) (*User, error) {
 	return s.repo.UpsertUserByEmail(ctx, email)

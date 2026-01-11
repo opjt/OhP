@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"ohp/internal/api/wrapper"
 	"ohp/internal/domain/user"
@@ -28,13 +29,29 @@ func NewUserHandler(log *log.Logger, env config.Env, service *user.UserService) 
 func (h *UserHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/whoami", h.Whoami)
+	r.Post("/terms-agree", wrapper.WrapJson(h.TermsAgree, h.log.Error, wrapper.RespondJSON))
 
 	return r
 }
+func (h *UserHandler) TermsAgree(ctx context.Context, _ interface{}) (interface{}, error) {
+
+	userClaim, err := token.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.service.TermsAgree(ctx, userClaim.UserID)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+
+}
 
 type resWhoami struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
+	UserID      uuid.UUID `json:"user_id"`
+	Email       string    `json:"email"`
+	TermsAgreed bool      `json:"terms_agreed"`
 }
 
 func (h *UserHandler) Whoami(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +70,9 @@ func (h *UserHandler) Whoami(w http.ResponseWriter, r *http.Request) {
 	h.log.Debug("...", "user", user)
 
 	resp := resWhoami{
-		UserID: user.ID,
-		Email:  user.Email,
+		UserID:      user.ID,
+		Email:       user.Email,
+		TermsAgreed: user.TermsAgreed,
 	}
 	wrapper.RespondJSON(w, http.StatusOK, resp)
 }

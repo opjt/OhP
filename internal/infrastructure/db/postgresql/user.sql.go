@@ -7,26 +7,47 @@ package postgresql
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 const findUserById = `-- name: FindUserById :one
-SELECT id, email, created_at, updated_at
+SELECT id, email, created_at, updated_at, terms_agreed
 FROM users
 WHERE id = $1
 `
 
-func (q *Queries) FindUserById(ctx context.Context, id uuid.UUID) (User, error) {
+type FindUserByIdRow struct {
+	ID          uuid.UUID
+	Email       string
+	CreatedAt   time.Time
+	UpdatedAt   *time.Time
+	TermsAgreed bool
+}
+
+func (q *Queries) FindUserById(ctx context.Context, id uuid.UUID) (FindUserByIdRow, error) {
 	row := q.db.QueryRow(ctx, findUserById, id)
-	var i User
+	var i FindUserByIdRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TermsAgreed,
 	)
 	return i, err
+}
+
+const updateUserTermsAgreed = `-- name: UpdateUserTermsAgreed :exec
+UPDATE users
+SET terms_agreed = true
+WHERE id = $1
+`
+
+func (q *Queries) UpdateUserTermsAgreed(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, updateUserTermsAgreed, id)
+	return err
 }
 
 const upsertUserByEmail = `-- name: UpsertUserByEmail :one
@@ -35,7 +56,7 @@ VALUES ($1, now())
 ON CONFLICT (email) 
 DO UPDATE SET 
     updated_at = EXCLUDED.updated_at
-RETURNING id, email, created_at, updated_at
+RETURNING id, email, terms_agreed, created_at, updated_at
 `
 
 func (q *Queries) UpsertUserByEmail(ctx context.Context, email string) (User, error) {
@@ -44,6 +65,7 @@ func (q *Queries) UpsertUserByEmail(ctx context.Context, email string) (User, er
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.TermsAgreed,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
