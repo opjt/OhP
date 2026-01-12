@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +18,8 @@ import (
 type ApiHandler struct {
 	log     *log.Logger
 	service *push.PushService
+
+	frontUrl string
 }
 
 func NewApiHandler(
@@ -28,14 +31,35 @@ func NewApiHandler(
 	return &ApiHandler{
 		log:     log,
 		service: service,
+
+		frontUrl: env.FrontUrl,
 	}
 }
 func (h *ApiHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/push/{token}", h.Push)
+	r.Post("/demo", h.Demo)
 	r.Post("/push-test", wrapper.WrapJson(h.TestPush, h.log.Error, wrapper.RespondJSON))
+	r.Post("/push-demo", wrapper.WrapJson(h.DemoPush, h.log.Error, wrapper.RespondJSON))
 
 	return r
+}
+
+type reqDemoPush struct {
+	Endpoint string `json:"endpoint"`
+	Auth     string `json:"auth"`
+	P256dh   string `json:"p256dh"`
+	Message  string `json:"message"`
+}
+
+func (h *ApiHandler) DemoPush(ctx context.Context, req reqDemoPush) (interface{}, error) {
+
+	h.service.DemoPush(ctx, push.DemoPushParams{
+		Endpoint: req.Endpoint,
+		Auth:     req.Auth,
+		P256dh:   req.P256dh,
+	}, req.Message)
+	return nil, nil
 }
 
 type reqTestPush struct {
@@ -56,6 +80,20 @@ func (h *ApiHandler) TestPush(ctx context.Context, req reqTestPush) (interface{}
 
 }
 
+func (h *ApiHandler) Demo(w http.ResponseWriter, r *http.Request) {
+
+	response := map[string]string{
+
+		"message": "이 엔드포인트는 데모용입니다. CLI 호출은 지원하지 않으며, 웹에서 로그인 후 푸시 구독을 완료해야 사용할 수 있습니다.",
+		"action":  h.frontUrl,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden) // 403
+
+	_ = json.NewEncoder(w).Encode(response)
+	return
+}
+
 type resPush struct {
 	Sent uint64 `json:"sent"`
 }
@@ -63,6 +101,7 @@ type resPush struct {
 func (h *ApiHandler) Push(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	token := chi.URLParamFromCtx(ctx, "token")
+
 	h.log.Info("...", "token", token)
 
 	bodyBytes, err := io.ReadAll(r.Body)

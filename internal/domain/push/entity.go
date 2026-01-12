@@ -8,3 +8,9 @@ type Subscription struct {
 	P256dh   string
 	Auth     string
 }
+
+type Token struct {
+	Endpoint string
+	P256dh   string
+	Auth     string
+}

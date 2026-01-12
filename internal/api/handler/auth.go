@@ -54,7 +54,7 @@ func (h *AuthHandler) FakeLogin(w http.ResponseWriter, r *http.Request) {
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w, r, h.frontUrl+"/", http.StatusFound)
+	wrapper.RespondJSON(w, http.StatusOK, nil)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {

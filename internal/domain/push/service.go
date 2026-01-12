@@ -129,6 +129,25 @@ func (s *PushService) Push(ctx context.Context, endpointToken string, message st
 	return count, nil
 }
 
+type DemoPushParams struct {
+	Endpoint string
+	Auth     string
+	P256dh   string
+}
+
+func (s *PushService) DemoPush(ctx context.Context, req DemoPushParams, message string) (interface{}, error) {
+
+	if err := s.pushNotification(token.Token{
+		P256dh:   req.P256dh,
+		Auth:     req.Auth,
+		EndPoint: req.Endpoint,
+	}, "Demo", message); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 func (s *PushService) pushNotification(token token.Token, title, body string) error {
 
 	subs := &webpush.Subscription{
