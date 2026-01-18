@@ -14,36 +14,45 @@ var (
 	ErrExpiredToken = errors.New("token has expired")
 )
 
-// Claims 정의: 토큰에 담길 데이터
 type Claims struct {
 	UserID uuid.UUID `json:"user_id"`
 	Email  string    `json:"email"`
 	jwt.RegisteredClaims
 }
 
-// TokenProvider: JWT 생성 및 검증을 담당하는 구조체
 type TokenProvider struct {
-	secret []byte
-	issuer string
-	expiry time.Duration
+	secret        []byte
+	issuer        string
+	accessExpiry  time.Duration
+	refreshExpiry time.Duration
 }
 
-// NewTokenProvider: Provider 생성자
-func NewTokenProvider(secret string, issuer string, expiry time.Duration) *TokenProvider {
+func NewTokenProvider(secret string, issuer string, accessExp time.Duration, refreshExp time.Duration) *TokenProvider {
 	return &TokenProvider{
-		secret: []byte(secret),
-		issuer: issuer,
-		expiry: expiry,
+		secret:        []byte(secret),
+		issuer:        issuer,
+		accessExpiry:  accessExp,
+		refreshExpiry: refreshExp,
 	}
 }
 
-// Create: 새로운 토큰 생성
-func (p *TokenProvider) Create(userID uuid.UUID, email string) (string, error) {
+// CreateAccessToken: 짧은 수명의 액세스 토큰 생성
+func (p *TokenProvider) CreateAccessToken(userID uuid.UUID, email string) (string, error) {
+	return p.generateToken(userID, email, p.accessExpiry)
+}
+
+// CreateRefreshToken: 긴 수명의 리프레시 토큰 생성
+func (p *TokenProvider) CreateRefreshToken(userID uuid.UUID, email string) (string, error) {
+	return p.generateToken(userID, email, p.refreshExpiry)
+}
+
+// 내부 공통 토큰 생성 로직
+func (p *TokenProvider) generateToken(userID uuid.UUID, email string, expiry time.Duration) (string, error) {
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(p.expiry)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    p.issuer,
 		},
@@ -53,10 +62,9 @@ func (p *TokenProvider) Create(userID uuid.UUID, email string) (string, error) {
 	return token.SignedString(p.secret)
 }
 
-// Validate: 토큰의 유효성 검사 및 Claims 반환
+// Validate: 액세스/리프레시 구분 없이 서명과 유효기간 검증
 func (p *TokenProvider) Validate(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		// 서명 알고리즘 확인
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

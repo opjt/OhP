@@ -2,6 +2,7 @@ package middle
 
 import (
 	"net/http"
+	"ohp/internal/api/handler"
 	"ohp/internal/pkg/token"
 )
 
@@ -9,7 +10,7 @@ func AuthMiddleware(tp *token.TokenProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// 1. 쿠키에서 토큰 추출
-			cookie, err := r.Cookie("auth_token")
+			cookie, err := r.Cookie(handler.AccessCookieKey)
 			if err != nil {
 				// 토큰이 없으면 401 에러 혹은 로그인 페이지로 리다이렉트
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)

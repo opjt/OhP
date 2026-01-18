@@ -31,16 +31,44 @@ func NewAuthService(
 		tokenProvider: tokenProvider,
 	}
 }
-func (s *AuthService) TestLogin(ctx context.Context) (string, error) {
+
+func (s *AuthService) RefreshToken(ctx context.Context, refreshTokenStr string) (string, string, error) {
+	// 서명 검증 및 클레임 추출 (DB 조회 없음)
+	claims, err := s.tokenProvider.Validate(refreshTokenStr)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid refresh token: %w", err)
+	}
+
+	// 추출한 정보로 새 토큰 세트 생성 (Sliding Window)
+	newAccess, err := s.tokenProvider.CreateAccessToken(claims.UserID, claims.Email)
+	if err != nil {
+		return "", "", err
+	}
+	newRefresh, err := s.tokenProvider.CreateRefreshToken(claims.UserID, claims.Email)
+	if err != nil {
+		return "", "", err
+	}
+
+	return newAccess, newRefresh, nil
+}
+
+func (s *AuthService) TestLogin(ctx context.Context) (string, string, error) {
 
 	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	email := "tester@gmail.com"
 
-	token, err := s.tokenProvider.Create(userID, email)
+	// Access Token (짧은 수명)
+	accessToken, err := s.tokenProvider.CreateAccessToken(userID, email)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate service token: %w", err)
+		return "", "", fmt.Errorf("failed to generate access token: %w", err)
 	}
-	return token, nil
+
+	// Refresh Token (긴 수명)
+	refreshToken, err := s.tokenProvider.CreateRefreshToken(userID, email)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+	return accessToken, refreshToken, nil
 
 }
 
@@ -51,26 +79,31 @@ type githubTokenResponse struct {
 	Scope       string `json:"scope"`
 }
 
-func (s *AuthService) OauthGithubFlow(ctx context.Context, code string) (token string, err error) {
-	accessToken, err := s.githubGetAccessToken(code)
+func (s *AuthService) OauthGithubFlow(ctx context.Context, code string) (at string, rt string, err error) {
+	githubAccessToken, err := s.githubGetAccessToken(code)
 	if err != nil {
-		return token, err
+		return at, rt, err
 	}
-	githubUser, err := s.getGithubUserProfile(accessToken)
+	githubUser, err := s.getGithubUserProfile(githubAccessToken)
 	if err != nil {
-		return token, err
+		return at, rt, err
 	}
 	dbUser, err := s.userService.UpsertUserByEmail(ctx, githubUser.Email)
 	if err != nil {
-		return token, err
+		return at, rt, err
 	}
 
-	token, err = s.tokenProvider.Create(dbUser.ID, dbUser.Email)
+	// 페어 토큰 생성
+	at, err = s.tokenProvider.CreateAccessToken(dbUser.ID, dbUser.Email)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate service token: %w", err)
+		return at, rt, err
+	}
+	rt, err = s.tokenProvider.CreateRefreshToken(dbUser.ID, dbUser.Email)
+	if err != nil {
+		return at, rt, err
 	}
 
-	return token, nil
+	return at, rt, nil
 }
 func (s *AuthService) githubGetAccessToken(code string) (string, error) {
 	// 요청 데이터 준비

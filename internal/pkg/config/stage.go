@@ -28,6 +28,7 @@ func (s Stage) String() string {
 		return "unknown"
 	}
 }
+func IsDev(s Stage) bool { return s == StageDev }
 
 // 문자열을 Stage로 파싱
 func parseStage(s string) Stage {
